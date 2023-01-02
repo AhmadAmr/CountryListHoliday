@@ -113,6 +113,21 @@ namespace CountryListHoliday.Repository
             return false;
         }
 
+        public async Task<bool> UpdateHoliDay(HoliDayUpdateModel model)
+        {
+            var holiday = await _context.Holidays.FirstOrDefaultAsync(x => x.ID == model.HolyDayID);
+
+            if(holiday != null)
+            {
+                holiday.Start = model.Start;
+                holiday.End = model.End;
+                holiday.HolidayName = model.HoliDayName;
+
+                _context.Holidays.Update(holiday);
+                await _context.SaveChangesAsync();
+            }
+            return false;
+        }
 
 
 
@@ -175,6 +190,6 @@ namespace CountryListHoliday.Repository
             await _context.SaveChangesAsync();
         }
 
-       
+      
     }
 }

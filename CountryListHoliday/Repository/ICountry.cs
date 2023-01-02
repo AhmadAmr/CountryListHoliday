@@ -16,5 +16,7 @@ namespace CountryListHoliday.Repository
         public Task<bool> AddHoliyDay(HoliDaySubmitModel model);
 
         public Task<bool> RemoveHoliyDay(string holiDayID);
+
+        public Task<bool> UpdateHoliDay(HoliDayUpdateModel model);
     }
 }

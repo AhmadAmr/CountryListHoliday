@@ -70,5 +70,15 @@ namespace CountryListHoliday.Controllers
             if (result) return Ok("HolyDay Removed");
             return BadRequest("BadRequest");
         }
+
+
+        [HttpPost("UpdateHoliDay")]
+        public async Task<ActionResult> UpdateHoliDay([FromBody] HoliDayUpdateModel model)
+        {
+
+            await _countryRepo.UpdateHoliDay(model);
+
+            return Ok("Holy Day Updated");
+        }
     }
 }
