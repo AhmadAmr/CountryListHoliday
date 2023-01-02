@@ -9,7 +9,7 @@ namespace CountryListHoliday.Repository
     {
         public Task<List<CountryResponse>> GetAllCountriesAsync();
         public Task GetAllHolidaiesASync();
-        public Task<List<Country>> ListAllCountriesAsync(int pageIndex);
+        public Task<List<Country>> ListAllCountriesAsync(int pageIndex , int PageSize);
 
         public Task<List<Holiday>> GetHoliDays(string name);
 

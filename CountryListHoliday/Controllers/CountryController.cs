@@ -37,9 +37,9 @@ namespace CountryListHoliday.Controllers
 
 
         [HttpGet("ListAllCountries/{pageNumber}")]
-        public async Task<List<Models.Country>> ListAllCountriesAsync(int pageNumber)
+        public async Task<List<Models.Country>> ListAllCountriesAsync(int pageNumber,int pageSize)
         {
-            return await _countryRepo.ListAllCountriesAsync(pageNumber);
+            return await _countryRepo.ListAllCountriesAsync(pageNumber,pageSize);
 
           
         }

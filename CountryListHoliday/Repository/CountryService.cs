@@ -67,12 +67,12 @@ namespace CountryListHoliday.Repository
 
         }
 
-        public  async Task<List<Country>> ListAllCountriesAsync(int pageIndex)
+        public  async Task<List<Country>> ListAllCountriesAsync(int pageIndex,int pageSize)
         {
-           int pageSize = 50;
+           
            var countries =  _context.Countries.AsQueryable();
 
-            return  await PaginatedList<Country>.CreateAsync(countries, pageIndex,pageSize);
+            return  await PaginatedList<Country>.CreateAsync(countries, pageIndex, pageSize);
         }
 
         public async Task<List<Holiday>> GetHoliDays(string name)
@@ -133,7 +133,7 @@ namespace CountryListHoliday.Repository
 
         private async Task GetHoliday(Country currentCountry)
         {
-            string url = $"calendar/v3/calendars/en.EG%23holiday%40group.v.calendar.google.com/events?key={_env.APiKey}";
+            string url = $"calendar/v3/calendars/en.{currentCountry.Code}%23holiday%40group.v.calendar.google.com/events?key={_env.APiKey}";
 
             var client = _httpClientFactory.CreateClient();
 
@@ -145,23 +145,22 @@ namespace CountryListHoliday.Repository
             {
                 var result = JsonConvert.DeserializeObject<HolidayResponse>(response.Content.ReadAsStringAsync().Result);
 
-                currentCountry.Holidays = result.Items.Select(x=> new Holiday
+
+                var holidays = result.Items.Select(x => new Holiday
                 {
                     Start = x.Start.Date,
                     End = x.End.Date,
                     ID = Guid.NewGuid().ToString(),
-                    HolidayName = x.Summary
+                    HolidayName = x.Summary,
+                    Country = currentCountry
                 }).ToList();
-                _context.Countries.Update(currentCountry);
+
+                _context.Holidays.AddRange(holidays);
                 await _context.SaveChangesAsync();
 
                 
             }
 
-            else
-            {
-                throw new Exception("Bad Request");
-            }
         }
 
         private async Task AddOrUpdate(List<CountryResponse> result)
