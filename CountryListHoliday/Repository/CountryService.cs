@@ -11,6 +11,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using MySqlX.XDevAPI.Common;
+using CountryListHoliday.Extentions;
+using Google.Protobuf.WellKnownTypes;
+using Microsoft.AspNetCore.Localization;
 
 namespace CountryListHoliday.Repository
 {
@@ -42,8 +45,7 @@ namespace CountryListHoliday.Repository
             {
                 var result = JsonConvert.DeserializeObject<List<CountryResponse>>(response.Content.ReadAsStringAsync().Result);
 
-                await RemoveCurrentList();
-                await AddCurrentList(result);
+                await AddOrUpdate(result);
 
                 return result;
             }
@@ -64,6 +66,54 @@ namespace CountryListHoliday.Repository
             }
 
         }
+
+        public  async Task<List<Country>> ListAllCountriesAsync(int pageIndex)
+        {
+           int pageSize = 50;
+           var countries =  _context.Countries.AsQueryable();
+
+            return  await PaginatedList<Country>.CreateAsync(countries, pageIndex,pageSize);
+        }
+
+        public async Task<List<Holiday>> GetHoliDays(string name)
+        {
+           return await _context.Countries.Where(X => X.Name.Contains(name)).Select(x => x.Holidays).FirstOrDefaultAsync();
+        }
+
+
+        public async Task<bool> AddHoliyDay(HoliDaySubmitModel model)
+        {
+            var country = await _context.Countries.FirstOrDefaultAsync(x=> x.ID == model.CountryID);
+            if (country != null)
+            {
+                _context.Holidays.Add(new Holiday
+                {
+                    Country = country,
+                    ID = Guid.NewGuid().ToString(),
+                    Start = model.Start,
+                    End = model.End,
+                    HolidayName = model.HoliDayName
+                });
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            else
+                return false;
+        }
+
+        public async Task<bool> RemoveHoliyDay(string holiDayID)
+        {
+            var holiday = await _context.Holidays.FirstOrDefaultAsync(x => x.ID == holiDayID);
+            if(holiday != null)
+            {
+                _context.Holidays.Remove(holiday);
+                 await _context.SaveChangesAsync();
+                return true;
+            }
+            return false;
+        }
+
+
 
 
         private async Task GetHoliday(Country currentCountry)
@@ -99,24 +149,32 @@ namespace CountryListHoliday.Repository
             }
         }
 
-        private async Task RemoveCurrentList()
+        private async Task AddOrUpdate(List<CountryResponse> result)
         {
-            var currentCountries = await _context.Countries.ToListAsync();
-            _context.Countries.RemoveRange(currentCountries);
-            await _context.SaveChangesAsync();
-        }
+            var currentList = await _context.Countries.ToListAsync();
 
-        private async Task AddCurrentList(List<CountryResponse> result)
-        {
-            var CountryList = result.Select(x => new Country
+            var newItems = result.Where(x => !currentList.Select(p=> p.Code).Contains(x.Cca2)).ToList();
+            var oldItems = currentList.Where(x => result.Select(p => p.Cca2).Contains(x.Code)).ToList();
+            foreach(var item in oldItems){ 
+
+                var curr = result.Where(a => a.Cca2 == item.Code).FirstOrDefault();
+                item.Name = curr.Name.Common;
+               }
+
+            var NewCountryList = newItems.Select(x => new Country
             {
                 ID = Guid.NewGuid().ToString(),
                 Name = x.Name.Common,
                 Code = x.Cca2
             }).ToList();
+            
 
-            _context.AddRange(CountryList);
+
+            _context.AddRange(NewCountryList);
+            _context.UpdateRange(oldItems);
             await _context.SaveChangesAsync();
         }
+
+       
     }
 }

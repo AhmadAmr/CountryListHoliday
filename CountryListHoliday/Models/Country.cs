@@ -12,6 +12,6 @@ namespace CountryListHoliday.Models
 
         public string Code { get; set; }
 
-        public List<Holiday> Holidays { get; set; } = new List<Holiday>();
+        public virtual List<Holiday> Holidays { get; set; } 
     }
 }

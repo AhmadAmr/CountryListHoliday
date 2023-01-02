@@ -1,7 +1,10 @@
-﻿using CountryListHoliday.Repository;
+﻿using CountryListHoliday.Models.RemoteModels;
+using CountryListHoliday.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Threading.Tasks;
 
 namespace CountryListHoliday.Controllers
@@ -17,7 +20,7 @@ namespace CountryListHoliday.Controllers
             _countryRepo = country;
         }
 
-        [HttpGet]
+        [HttpGet("Sync")]
         public async Task<ActionResult> SyncCountries()
         {
             try
@@ -32,5 +35,40 @@ namespace CountryListHoliday.Controllers
             }
         }
 
+
+        [HttpGet("ListAllCountries/{pageNumber}")]
+        public async Task<List<Models.Country>> ListAllCountriesAsync(int pageNumber)
+        {
+            return await _countryRepo.ListAllCountriesAsync(pageNumber);
+
+          
+        }
+
+        [HttpGet("ListHoliDays/{name}")]
+        public async Task<List<Models.Holiday>> ListHoliDaysAsync(string name)
+        {
+            return await _countryRepo.GetHoliDays(name);
+
+
+        }
+
+        [HttpPost("AddHoliDay")]
+        public async Task<ActionResult> AddHoliDay([FromBody] HoliDaySubmitModel model)
+        {
+
+            await _countryRepo.AddHoliyDay(model);
+
+            return Ok("Holy Day Added");
+        }
+
+
+        [HttpPost("RemoveHolyDay")]
+        public async Task<ActionResult> RemoveHolyDay([FromBody] string holidayID)
+        {
+            var result = await _countryRepo.RemoveHoliyDay(holidayID);
+
+            if (result) return Ok("HolyDay Removed");
+            return BadRequest("BadRequest");
+        }
     }
 }
