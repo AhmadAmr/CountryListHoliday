@@ -9,6 +9,8 @@ using Microsoft.Extensions.Options;
 using CountryListHoliday.Models.DTO;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using MySqlX.XDevAPI.Common;
 
 namespace CountryListHoliday.Repository
 {
@@ -40,15 +42,8 @@ namespace CountryListHoliday.Repository
             {
                 var result = JsonConvert.DeserializeObject<List<CountryResponse>>(response.Content.ReadAsStringAsync().Result);
 
-               var CountryList = result.Select(x => new Country
-                {
-                    ID = Guid.NewGuid().ToString(),
-                    Name = x.Name.Common,
-                    Code = x.Cca2
-                }).ToList();
-
-                _context.AddRange(CountryList);
-                await _context.SaveChangesAsync();
+                await RemoveCurrentList();
+                await AddCurrentList(result);
 
                 return result;
             }
@@ -59,9 +54,69 @@ namespace CountryListHoliday.Repository
             }
         }
 
-        public Task GetAllHolidaiesASync()
+        public async Task GetAllHolidaiesASync()
         {
-            throw new System.NotImplementedException();
+           var countries =  await _context.Countries.ToListAsync();
+
+            foreach(var country in countries)
+            {
+                await GetHoliday(country);
+            }
+
+        }
+
+
+        private async Task GetHoliday(Country currentCountry)
+        {
+            string url = $"calendar/v3/calendars/en.EG%23holiday%40group.v.calendar.google.com/events?key={_env.APiKey}";
+
+            var client = _httpClientFactory.CreateClient();
+
+            client.BaseAddress = new Uri(_env.HoliDayBaseUrl);
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            HttpResponseMessage response = await client.GetAsync(url);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = JsonConvert.DeserializeObject<HolidayResponse>(response.Content.ReadAsStringAsync().Result);
+
+                currentCountry.Holidays = result.Items.Select(x=> new Holiday
+                {
+                    Start = x.Start.Date,
+                    End = x.End.Date,
+                    ID = Guid.NewGuid().ToString(),
+                    HolidayName = x.Summary
+                }).ToList();
+                _context.Countries.Update(currentCountry);
+                await _context.SaveChangesAsync();
+
+                
+            }
+
+            else
+            {
+                throw new Exception("Bad Request");
+            }
+        }
+
+        private async Task RemoveCurrentList()
+        {
+            var currentCountries = await _context.Countries.ToListAsync();
+            _context.Countries.RemoveRange(currentCountries);
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task AddCurrentList(List<CountryResponse> result)
+        {
+            var CountryList = result.Select(x => new Country
+            {
+                ID = Guid.NewGuid().ToString(),
+                Name = x.Name.Common,
+                Code = x.Cca2
+            }).ToList();
+
+            _context.AddRange(CountryList);
+            await _context.SaveChangesAsync();
         }
     }
 }

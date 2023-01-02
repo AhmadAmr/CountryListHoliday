@@ -1,6 +1,7 @@
 ﻿using CountryListHoliday.Repository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Threading.Tasks;
 
 namespace CountryListHoliday.Controllers
@@ -17,9 +18,18 @@ namespace CountryListHoliday.Controllers
         }
 
         [HttpGet]
-        public async Task SyncCountries()
+        public async Task<ActionResult> SyncCountries()
         {
-            await _countryRepo.GetAllCountriesAsync();
+            try
+            {
+                var countryList = await _countryRepo.GetAllCountriesAsync();
+                await _countryRepo.GetAllHolidaiesASync();
+                return Ok("All Countries Synced");
+            }
+            catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
     }
