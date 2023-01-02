@@ -1,4 +1,6 @@
 using CountryListHoliday.Models;
+using CountryListHoliday.Models.DTO;
+using CountryListHoliday.Repository;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -29,8 +31,10 @@ namespace CountryListHoliday
         public void ConfigureServices(IServiceCollection services)
         {
             string mySqlConnectionStr = Configuration.GetConnectionString("Default");
+            services.Configure<CountriesConf>(Configuration.GetSection("CountriesConf"));
             services.AddDbContextPool<ApplicationDbContext>(options => options.UseMySql(mySqlConnectionStr, ServerVersion.AutoDetect(mySqlConnectionStr)));
-
+            services.AddTransient<ICountry, CountryService>();
+            services.AddHttpClient();
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
