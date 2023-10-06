@@ -14,6 +14,7 @@ using MySqlX.XDevAPI.Common;
 using CountryListHoliday.Extentions;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace CountryListHoliday.Repository
 {
@@ -59,12 +60,20 @@ namespace CountryListHoliday.Repository
         public async Task GetAllHolidaiesASync()
         {
            var countries =  await _context.Countries.ToListAsync();
+            List<Task<List<Holiday>>> TaskList = new List<Task<List< Holiday>>>();
 
-            foreach(var country in countries)
+            foreach (var country in countries)
             {
-                await GetHoliday(country);
+                var LastTask = GetHoliday(country);
+                TaskList.Add(LastTask);
             }
+            await Task.WhenAll(TaskList);
 
+            foreach (var task in TaskList)
+            {
+                _context.Holidays.AddRange(task.Result);
+                await _context.SaveChangesAsync();
+            }
         }
 
         public  async Task<List<Country>> ListAllCountriesAsync(int pageIndex,int pageSize)
@@ -131,7 +140,7 @@ namespace CountryListHoliday.Repository
 
 
 
-        private async Task GetHoliday(Country currentCountry)
+        private async Task<List<Holiday>> GetHoliday(Country currentCountry)
         {
             string url = $"calendar/v3/calendars/en.{currentCountry.Code}%23holiday%40group.v.calendar.google.com/events?key={_env.APiKey}";
 
@@ -155,11 +164,12 @@ namespace CountryListHoliday.Repository
                     Country = currentCountry
                 }).ToList();
 
-                _context.Holidays.AddRange(holidays);
-                await _context.SaveChangesAsync();
-
+                
+                return holidays;
                 
             }
+
+            return new List<Holiday>();
 
         }
 

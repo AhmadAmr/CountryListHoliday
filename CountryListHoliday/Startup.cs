@@ -33,7 +33,7 @@ namespace CountryListHoliday
         {
             string mySqlConnectionStr = Configuration.GetConnectionString("Default");
             services.Configure<CountriesConf>(Configuration.GetSection("CountriesConf"));
-            services.AddDbContextPool<ApplicationDbContext>(options => options.UseMySql(mySqlConnectionStr, ServerVersion.AutoDetect(mySqlConnectionStr)));
+            services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("Default")));
             services.AddTransient<ICountry, CountryService>();
             services.AddHttpClient();
             services.AddControllers();
